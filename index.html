@@ -151,7 +151,7 @@
     <input type="hidden" id="entry-activity">
 
     <label>תאריך</label>
-    <input type="date" id="entry-date">
+    <input type="text" id="entry-date" placeholder="19/06/2026" inputmode="numeric" maxlength="10">
 
     <label>סוג רישום שעות</label>
     <div class="toggle-row">
@@ -160,8 +160,8 @@
     </div>
     <div class="time-fields show" id="time-fields">
       <div class="row2">
-        <div><label>שעת התחלה</label><input type="time" id="time-start"></div>
-        <div><label>שעת סיום</label><input type="time" id="time-end"></div>
+        <div><label>שעת התחלה (24 שעות)</label><input type="text" id="time-start" placeholder="08:00" inputmode="numeric" maxlength="5"></div>
+        <div><label>שעת סיום (24 שעות)</label><input type="text" id="time-end" placeholder="10:30" inputmode="numeric" maxlength="5"></div>
       </div>
     </div>
     <div class="hours-field" id="hours-field">
@@ -248,7 +248,7 @@
       <option value="ביקור">ביקור פיזי</option>
     </select>
     <label>תאריך</label>
-    <input type="date" id="edit-date">
+    <input type="text" id="edit-date" placeholder="19/06/2026" inputmode="numeric" maxlength="10">
     <label>שעות מדווחות</label>
     <input type="number" id="edit-hours" min="0" max="24" step="0.25">
     <label>סוג עבודה</label>
@@ -279,6 +279,11 @@ const STORE_KEY = 'water_log_v3';
 const GLOBAL_RATE = { 'רועי': 0.5, 'בקעות': 1, 'נתיב הגדוד': 1.5 };
 const TRAVEL_KM   = { 'רועי': 0,   'בקעות': 7, 'נתיב הגדוד': 80 };
 
+// המרת DD/MM/YYYY ל-YYYY-MM-DD
+function toISO(d) { if(!d) return ''; if(d.includes('-')) return d; const p=d.split('/'); if(p.length!==3) return ''; return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'); }
+// המרת YYYY-MM-DD ל-DD/MM/YYYY
+function toHeb(d) { if(!d) return ''; if(d.includes('/')) return d; const p=d.split('-'); if(p.length!==3) return d; return p[2]+'/'+p[1]+'/'+p[0]; }
+
 function load() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
 function save(e) { localStorage.setItem(STORE_KEY, JSON.stringify(e)); }
 
@@ -290,7 +295,7 @@ function allDatesInMonth(ym) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+  const t=new Date(); document.getElementById('entry-date').value = String(t.getDate()).padStart(2,'0')+'/'+ String(t.getMonth()+1).padStart(2,'0')+'/'+t.getFullYear();
   populateMonthSelects();
   renderHistory();
   renderReport();
@@ -349,12 +354,13 @@ function setMode(m) {
 function saveEntry() {
   const yishuv   = document.getElementById('entry-yishuv').value;
   const activity = document.getElementById('entry-activity').value;
-  const date     = document.getElementById('entry-date').value;
+  const dateRaw  = document.getElementById('entry-date').value;
+  const date     = toISO(dateRaw);
   const desc     = document.getElementById('entry-desc').value.trim();
   const type     = document.getElementById('work-type').value;
   if(!yishuv)   { showToast('נא לבחור ישוב'); return; }
   if(!activity) { showToast('נא לבחור סוג פעילות'); return; }
-  if(!date)     { showToast('נא לבחור תאריך'); return; }
+  if(!date||date.length!==10)  { showToast('נא להזין תאריך בפורמט יום/חודש/שנה'); return; }
   if(!desc)     { showToast('נא לתאר את העבודה'); return; }
 
   let reportedHours = 0;
@@ -556,7 +562,7 @@ function openEdit(id) {
   document.getElementById('edit-id').value      = id;
   document.getElementById('edit-yishuv').value  = e.yishuv||'';
   document.getElementById('edit-activity').value= e.activity||'מרחוק';
-  document.getElementById('edit-date').value    = e.date;
+  document.getElementById('edit-date').value    = toHeb(e.date);
   document.getElementById('edit-hours').value   = e.reportedHours||0;
   document.getElementById('edit-type').value    = e.type;
   document.getElementById('edit-desc').value    = e.desc;
@@ -569,7 +575,7 @@ function saveEdit() {
   entries[idx].yishuv        = document.getElementById('edit-yishuv').value;
   entries[idx].activity      = document.getElementById('edit-activity').value;
   entries[idx].date          = document.getElementById('edit-date').value;
-  entries[idx].reportedHours = parseFloat(document.getElementById('edit-hours').value)||0;
+  entries[idx].date          = toISO(document.getElementById('edit-date').value);
   entries[idx].type          = document.getElementById('edit-type').value;
   entries[idx].desc          = document.getElementById('edit-desc').value;
   entries.sort((a,b)=>b.date.localeCompare(a.date));
