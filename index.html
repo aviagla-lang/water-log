@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>יומן עבודה — מערכת המים</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap');
+  :root {
+    --blue-deep:#1a3a4a; --blue-mid:#2a6080; --blue-light:#e8f4f8;
+    --teal:#3a8c7e; --teal-light:#d0eeea; --sand:#f5f0e8;
+    --text:#1a2630; --muted:#6a8090; --border:#c8dce6;
+    --red:#c0392b; --orange:#e07b30;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Heebo',sans-serif;background:var(--sand);color:var(--text);min-height:100vh;font-size:15px;}
+
+  header{background:var(--blue-deep);color:white;padding:16px 20px 14px;display:flex;align-items:center;gap:12px;}
+  .header-drop{width:36px;height:36px;background:var(--teal);border-radius:50% 50% 50% 0;transform:rotate(-45deg);flex-shrink:0;}
+  header h1{font-size:1.05rem;font-weight:700;line-height:1.3;}
+  header p{font-size:0.78rem;color:#90b8cc;font-weight:300;}
+
+  .tabs{display:flex;background:var(--blue-mid);}
+  .tab{flex:1;padding:11px 6px;background:none;border:none;color:#90b8cc;font-family:'Heebo',sans-serif;font-size:0.8rem;font-weight:500;cursor:pointer;transition:background .15s,color .15s;}
+  .tab.active{background:var(--sand);color:var(--blue-deep);font-weight:700;}
+
+  .panel{display:none;padding:16px;}
+  .panel.active{display:block;}
+
+  .card{background:white;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);padding:16px;margin-bottom:14px;}
+  .card h2{font-size:.9rem;font-weight:700;color:var(--blue-mid);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  .card h2::before{content:'';width:4px;height:16px;background:var(--teal);border-radius:2px;display:inline-block;}
+
+  label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:4px;margin-top:10px;}
+  label:first-of-type{margin-top:0;}
+  input,textarea,select{width:100%;border:1px solid var(--border);border-radius:7px;padding:9px 11px;font-family:'Heebo',sans-serif;font-size:.9rem;color:var(--text);background:white;transition:border-color .15s;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--teal);}
+  textarea{resize:vertical;min-height:72px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .yishuv-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px;}
+  .yishuv-btn{padding:7px 14px;border:1px solid var(--border);border-radius:20px;background:white;font-family:'Heebo',sans-serif;font-size:.85rem;cursor:pointer;color:var(--muted);transition:all .15s;}
+  .yishuv-btn[data-y="רועי"]              {border-color:#2a6080;}
+  .yishuv-btn[data-y="רועי"].active       {background:#d0e8f4;color:#2a6080;font-weight:700;}
+  .yishuv-btn[data-y="בקעות"]             {border-color:#3a8c7e;}
+  .yishuv-btn[data-y="בקעות"].active      {background:#d0eeea;color:#3a8c7e;font-weight:700;}
+  .yishuv-btn[data-y="נתיב הגדוד"]        {border-color:#7a5c2a;}
+  .yishuv-btn[data-y="נתיב הגדוד"].active {background:#f0e8d0;color:#7a5c2a;font-weight:700;}
+
+  .yishuv-tag{display:inline-block;font-size:.72rem;padding:2px 9px;border-radius:20px;margin-left:4px;font-weight:700;}
+  .yt-רועי        {background:#d0e8f4;color:#2a6080;border:1px solid #2a6080;}
+  .yt-בקעות       {background:#d0eeea;color:#3a8c7e;border:1px solid #3a8c7e;}
+  .yt-נתיב-הגדוד {background:#f0e8d0;color:#7a5c2a;border:1px solid #7a5c2a;}
+
+  /* סוג פעילות */
+  .activity-row{display:flex;gap:7px;margin-bottom:4px;}
+  .act-btn{flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:white;font-family:'Heebo',sans-serif;font-size:.82rem;cursor:pointer;color:var(--muted);transition:all .15s;text-align:center;}
+  .act-btn.active{font-weight:700;}
+  .act-btn[data-a="מרחוק"].active  {background:#e8f4f8;border-color:#2a6080;color:#2a6080;}
+  .act-btn[data-a="ביקור"].active  {background:#f0e8d0;border-color:#7a5c2a;color:#7a5c2a;}
+
+  .visit-note{font-size:.75rem;color:var(--orange);margin-top:4px;display:none;}
+  .visit-note.show{display:block;}
+
+  .toggle-row{display:flex;gap:8px;margin-bottom:4px;}
+  .toggle-btn{flex:1;padding:8px;border:1px solid var(--border);border-radius:7px;background:white;font-family:'Heebo',sans-serif;font-size:.82rem;cursor:pointer;color:var(--muted);transition:all .15s;}
+  .toggle-btn.active{background:var(--teal-light);border-color:var(--teal);color:var(--teal);font-weight:700;}
+  .time-fields,.hours-field{display:none;}
+  .time-fields.show,.hours-field.show{display:block;}
+
+  .btn-primary{width:100%;background:var(--teal);color:white;border:none;border-radius:8px;padding:12px;font-family:'Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px;transition:background .15s;}
+  .btn-primary:hover{background:var(--blue-mid);}
+  .btn-secondary{background:white;color:var(--blue-mid);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;transition:background .15s;}
+  .btn-secondary:hover{background:var(--blue-light);}
+  .btn-danger{background:none;border:none;color:var(--red);font-size:.8rem;cursor:pointer;padding:2px 6px;font-family:'Heebo',sans-serif;}
+
+  .entry{border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--blue-light);}
+  .entry-header{display:flex;justify-content:space-between;align-items:flex-start;}
+  .entry-date{font-size:.78rem;color:var(--muted);}
+  .entry-hours{font-size:1.1rem;font-weight:700;color:var(--teal);white-space:nowrap;}
+  .entry-desc{font-size:.85rem;margin-top:5px;color:var(--text);line-height:1.5;}
+  .entry-tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;}
+  .entry-tag{display:inline-block;font-size:.72rem;padding:2px 8px;border-radius:20px;background:white;border:1px solid var(--border);color:var(--muted);}
+  .entry-tag.visit{background:#f0e8d0;border-color:#7a5c2a;color:#7a5c2a;}
+  .entry-tag.travel{background:#fef3e2;border-color:#e07b30;color:#e07b30;}
+  .entry-actions{display:flex;gap:6px;margin-top:8px;}
+
+  .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .filter-bar label{margin:0;font-size:.82rem;}
+  .filter-bar select{width:auto;font-size:.82rem;padding:6px 10px;}
+
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat-box{background:var(--blue-light);border-radius:8px;padding:10px;text-align:center;}
+  .stat-box .num{font-size:1.35rem;font-weight:700;color:var(--blue-deep);}
+  .stat-box .lbl{font-size:.7rem;color:var(--muted);margin-top:2px;}
+  .rate-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+  .rate-row label{margin:0;white-space:nowrap;font-size:.82rem;}
+  .rate-row input{max-width:100px;}
+
+  .global-info{background:var(--teal-light);border:1px solid var(--teal);border-radius:8px;padding:10px 14px;font-size:.8rem;color:#2a6060;margin-bottom:12px;line-height:1.8;}
+
+  .report-box{background:var(--blue-light);border-radius:8px;padding:12px;font-size:.78rem;line-height:1.75;white-space:pre-wrap;direction:rtl;text-align:right;}
+  .empty{text-align:center;color:var(--muted);padding:30px 16px;font-size:.9rem;}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:white;border-radius:12px;padding:20px;width:calc(100% - 32px);max-width:420px;max-height:90vh;overflow-y:auto;}
+  .modal h3{font-size:1rem;color:var(--blue-deep);margin-bottom:14px;}
+  .modal-actions{display:flex;gap:8px;margin-top:14px;}
+  .modal-actions .btn-primary{margin-top:0;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--blue-deep);color:white;padding:10px 20px;border-radius:20px;font-size:.85rem;font-weight:500;transition:transform .3s;z-index:200;white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-drop"></div>
+  <div>
+    <h1>יומן עבודה — מערכת המים</h1>
+    <p>רועי · בקעות · נתיב הגדוד</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('log',this)">📋 רישום</button>
+  <button class="tab" onclick="switchTab('history',this)">📅 היסטוריה</button>
+  <button class="tab" onclick="switchTab('report',this)">📊 דוח חודשי</button>
+</div>
+
+<!-- ═══ LOG ═══ -->
+<div id="tab-log" class="panel active">
+  <div class="card">
+    <h2>רשומת עבודה חדשה</h2>
+
+    <label>ישוב</label>
+    <div class="yishuv-row">
+      <button class="yishuv-btn" data-y="רועי"         onclick="selectYishuv('רועי')">רועי</button>
+      <button class="yishuv-btn" data-y="בקעות"        onclick="selectYishuv('בקעות')">בקעות</button>
+      <button class="yishuv-btn" data-y="נתיב הגדוד"   onclick="selectYishuv('נתיב הגדוד')">נתיב הגדוד</button>
+    </div>
+    <input type="hidden" id="entry-yishuv">
+
+    <label>סוג פעילות</label>
+    <div class="activity-row">
+      <button class="act-btn" data-a="מרחוק" onclick="selectActivity('מרחוק')">💻 עבודה מרחוק</button>
+      <button class="act-btn" data-a="ביקור" onclick="selectActivity('ביקור')" id="btn-visit">🚗 ביקור פיזי</button>
+    </div>
+    <div class="visit-note" id="visit-note"></div>
+    <input type="hidden" id="entry-activity">
+
+    <label>תאריך</label>
+    <input type="date" id="entry-date">
+
+    <label>סוג רישום שעות</label>
+    <div class="toggle-row">
+      <button class="toggle-btn active" id="mode-times" onclick="setMode('times')">שעת כניסה / יציאה</button>
+      <button class="toggle-btn" id="mode-manual" onclick="setMode('manual')">מספר שעות ידני</button>
+    </div>
+    <div class="time-fields show" id="time-fields">
+      <div class="row2">
+        <div><label>שעת התחלה</label><input type="time" id="time-start"></div>
+        <div><label>שעת סיום</label><input type="time" id="time-end"></div>
+      </div>
+    </div>
+    <div class="hours-field" id="hours-field">
+      <label>מספר שעות (0 = גלובלי בלבד)</label>
+      <input type="number" id="manual-hours" min="0" max="24" step="0.25" placeholder="לדוגמה: 2.5">
+    </div>
+
+    <label>סוג עבודה</label>
+    <select id="work-type">
+      <option value="">-- בחר --</option>
+      <option>תחזוקה שוטפת</option>
+      <option>תיקון תקלה</option>
+      <option>קריאת מונים</option>
+      <option>טיפול בלחץ</option>
+      <option>טיפול בדליפה</option>
+      <option>בדיקת כלור / איכות מים</option>
+      <option>עדכון אתר m-ply / citymind</option>
+      <option>מענה לפניות תושבים</option>
+      <option>ישיבה / תיאום</option>
+      <option>אחר</option>
+    </select>
+
+    <label>תיאור העבודה שבוצעה</label>
+    <textarea id="entry-desc" placeholder="פרט מה בוצע בפועל..."></textarea>
+
+    <button class="btn-primary" onclick="saveEntry()">שמור רשומה ✓</button>
+  </div>
+</div>
+
+<!-- ═══ HISTORY ═══ -->
+<div id="tab-history" class="panel">
+  <div class="card">
+    <div class="filter-bar">
+      <label>חודש:</label>
+      <select id="filter-month" onchange="renderHistory()"><option value="">הכל</option></select>
+      <label>ישוב:</label>
+      <select id="filter-yishuv" onchange="renderHistory()">
+        <option value="">כולם</option>
+        <option>רועי</option><option>בקעות</option><option>נתיב הגדוד</option>
+      </select>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ═══ REPORT ═══ -->
+<div id="tab-report" class="panel">
+  <div class="card">
+    <h2>דוח חודשי</h2>
+    <div class="filter-bar">
+      <label>חודש:</label>
+      <select id="report-month" onchange="renderReport()"><option value="">-- בחר --</option></select>
+      <label>ישוב:</label>
+      <select id="report-yishuv" onchange="renderReport()">
+        <option value="">כולם</option>
+        <option>רועי</option><option>בקעות</option><option>נתיב הגדוד</option>
+      </select>
+    </div>
+    <div class="rate-row">
+      <label>תעריף שעה (₪):</label>
+      <input type="number" id="hourly-rate" value="120" min="0" step="5" oninput="renderReport()">
+      <label style="margin-right:8px">תעריף ק"מ (₪):</label>
+      <input type="number" id="km-rate" value="1.55" min="0" step="0.01" oninput="renderReport()" style="max-width:75px">
+    </div>
+    <div id="global-info-box"></div>
+    <div class="summary-grid" id="summary-grid"></div>
+    <button class="btn-secondary" onclick="copyReport()" style="margin-bottom:10px">📋 העתק דוח</button>
+    <div class="report-box" id="report-text"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>עריכת רשומה</h3>
+    <input type="hidden" id="edit-id">
+    <label>ישוב</label>
+    <select id="edit-yishuv">
+      <option>רועי</option><option>בקעות</option><option>נתיב הגדוד</option>
+    </select>
+    <label>סוג פעילות</label>
+    <select id="edit-activity">
+      <option value="מרחוק">עבודה מרחוק</option>
+      <option value="ביקור">ביקור פיזי</option>
+    </select>
+    <label>תאריך</label>
+    <input type="date" id="edit-date">
+    <label>שעות מדווחות</label>
+    <input type="number" id="edit-hours" min="0" max="24" step="0.25">
+    <label>סוג עבודה</label>
+    <select id="edit-type">
+      <option value="">-- בחר --</option>
+      <option>תחזוקה שוטפת</option><option>תיקון תקלה</option><option>קריאת מונים</option>
+      <option>טיפול בלחץ</option><option>טיפול בדליפה</option>
+      <option>בדיקת כלור / איכות מים</option>
+      <option>עדכון אתר m-ply / citymind</option>
+      <option>מענה לפניות תושבים</option>
+      <option>ישיבה / תיאום</option><option>אחר</option>
+    </select>
+    <label>תיאור</label>
+    <textarea id="edit-desc"></textarea>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveEdit()">שמור</button>
+      <button class="btn-secondary" onclick="closeModal()">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE_KEY = 'water_log_v3';
+
+// גלובלי שעות/יום, ק"מ נסיעה לביקור
+const GLOBAL_RATE = { 'רועי': 0.5, 'בקעות': 1, 'נתיב הגדוד': 1.5 };
+const TRAVEL_KM   = { 'רועי': 0,   'בקעות': 7, 'נתיב הגדוד': 80 };
+
+function load() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
+function save(e) { localStorage.setItem(STORE_KEY, JSON.stringify(e)); }
+
+function daysInMonth(ym) { const [y,m]=ym.split('-').map(Number); return new Date(y,m,0).getDate(); }
+function allDatesInMonth(ym) {
+  const d=daysInMonth(ym); const out=[];
+  for(let i=1;i<=d;i++) out.push(`${ym}-${String(i).padStart(2,'0')}`);
+  return out;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+  populateMonthSelects();
+  renderHistory();
+  renderReport();
+});
+
+function switchTab(name,btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='history') renderHistory();
+  if(name==='report')  renderReport();
+}
+
+function selectYishuv(y) {
+  document.getElementById('entry-yishuv').value = y;
+  document.querySelectorAll('.yishuv-btn').forEach(b=>b.classList.toggle('active',b.dataset.y===y));
+  // רועי — אין ביקור פיזי
+  const visitBtn = document.getElementById('btn-visit');
+  if(y==='רועי') {
+    visitBtn.disabled=true; visitBtn.style.opacity='0.4';
+    if(document.getElementById('entry-activity').value==='ביקור') selectActivity('מרחוק');
+  } else {
+    visitBtn.disabled=false; visitBtn.style.opacity='1';
+  }
+  updateVisitNote();
+}
+
+function selectActivity(a) {
+  document.getElementById('entry-activity').value = a;
+  document.querySelectorAll('.act-btn').forEach(b=>b.classList.toggle('active',b.dataset.a===a));
+  updateVisitNote();
+}
+
+function updateVisitNote() {
+  const y = document.getElementById('entry-yishuv').value;
+  const a = document.getElementById('entry-activity').value;
+  const note = document.getElementById('visit-note');
+  const kmRate = parseFloat(document.getElementById('km-rate')?.value)||1.55;
+  if(a==='ביקור' && y && TRAVEL_KM[y]>0) {
+    const km=TRAVEL_KM[y];
+    note.textContent = `🚗 נסיעה: ${km} ק"מ × ₪${kmRate.toFixed(2)} = ₪${(km*kmRate).toFixed(2)}`;
+    note.classList.add('show');
+  } else {
+    note.classList.remove('show');
+  }
+}
+
+function setMode(m) {
+  document.getElementById('mode-times').classList.toggle('active',m==='times');
+  document.getElementById('mode-manual').classList.toggle('active',m==='manual');
+  document.getElementById('time-fields').classList.toggle('show',m==='times');
+  document.getElementById('hours-field').classList.toggle('show',m==='manual');
+}
+
+function saveEntry() {
+  const yishuv   = document.getElementById('entry-yishuv').value;
+  const activity = document.getElementById('entry-activity').value;
+  const date     = document.getElementById('entry-date').value;
+  const desc     = document.getElementById('entry-desc').value.trim();
+  const type     = document.getElementById('work-type').value;
+  if(!yishuv)   { showToast('נא לבחור ישוב'); return; }
+  if(!activity) { showToast('נא לבחור סוג פעילות'); return; }
+  if(!date)     { showToast('נא לבחור תאריך'); return; }
+  if(!desc)     { showToast('נא לתאר את העבודה'); return; }
+
+  let reportedHours = 0;
+  const mode = document.getElementById('mode-times').classList.contains('active') ? 'times' : 'manual';
+  if(mode==='times') {
+    const s=document.getElementById('time-start').value;
+    const e=document.getElementById('time-end').value;
+    if(s && e) {
+      const [sh,sm]=s.split(':').map(Number), [eh,em]=e.split(':').map(Number);
+      reportedHours = (eh*60+em-sh*60-sm)/60;
+      if(reportedHours<0){ showToast('שעת הסיום חייבת להיות אחרי ההתחלה'); return; }
+    }
+  } else {
+    reportedHours = parseFloat(document.getElementById('manual-hours').value)||0;
+    if(reportedHours<0){ showToast('מספר שעות לא תקין'); return; }
+  }
+
+  const entries = load();
+  entries.push({
+    id: Date.now(), yishuv, activity, date,
+    reportedHours: Math.round(reportedHours*4)/4,
+    type: type||'לא צוין', desc,
+    timeStart: mode==='times'?document.getElementById('time-start').value:null,
+    timeEnd:   mode==='times'?document.getElementById('time-end').value:null,
+  });
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  save(entries);
+
+  document.getElementById('entry-desc').value='';
+  document.getElementById('work-type').value='';
+  document.getElementById('time-start').value='';
+  document.getElementById('time-end').value='';
+  document.getElementById('manual-hours').value='';
+  populateMonthSelects();
+  showToast('✓ הרשומה נשמרה');
+}
+
+// חישוב שעות לחיוב לרשומה אחת: max(גלובלי, מדווח)
+function billedHours(e) {
+  const g = GLOBAL_RATE[e.yishuv]||0;
+  return Math.max(g, e.reportedHours||0);
+}
+
+function renderHistory() {
+  const fMonth  = document.getElementById('filter-month')?.value||'';
+  const fYishuv = document.getElementById('filter-yishuv')?.value||'';
+  const entries = load().filter(e=>
+    (!fMonth  || e.date.startsWith(fMonth)) &&
+    (!fYishuv || e.yishuv===fYishuv)
+  );
+  const el = document.getElementById('history-list');
+  if(!entries.length){ el.innerHTML='<div class="empty">אין רשומות להצגה</div>'; return; }
+  const kmRate = parseFloat(document.getElementById('km-rate')?.value)||1.55;
+  el.innerHTML = entries.map(e=>{
+    const yc='yishuv-tag yt-'+(e.yishuv||'').replace(' ','-');
+    const bh=billedHours(e);
+    const km=e.activity==='ביקור'?TRAVEL_KM[e.yishuv]||0:0;
+    const travelStr=km>0?` + ₪${(km*kmRate).toFixed(2)} נסיעה`:'';
+    const hoursNote=e.reportedHours<(GLOBAL_RATE[e.yishuv]||0)&&e.reportedHours>0
+      ?` (גלובלי)`
+      :e.reportedHours===0?' (גלובלי)':'';
+    return `<div class="entry">
+      <div class="entry-header">
+        <div>
+          <div class="entry-date">${formatDate(e.date)}${e.timeStart?` · ${e.timeStart}–${e.timeEnd}`:''}</div>
+          <div class="entry-tags">
+            <span class="${yc}">${e.yishuv||'—'}</span>
+            <span class="entry-tag${e.activity==='ביקור'?' visit':''}">${e.activity==='ביקור'?'🚗 ביקור פיזי':'💻 מרחוק'}</span>
+            <span class="entry-tag">${e.type}</span>
+          </div>
+        </div>
+        <div class="entry-hours">${formatHours(bh)}${hoursNote}<br><small style="font-size:.7rem;color:var(--orange)">${travelStr}</small></div>
+      </div>
+      <div class="entry-desc">${e.desc}</div>
+      <div class="entry-actions">
+        <button class="btn-secondary" onclick="openEdit(${e.id})">✏️ עריכה</button>
+        <button class="btn-danger"    onclick="deleteEntry(${e.id})">🗑 מחק</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderReport() {
+  updateVisitNote();
+  const month   = document.getElementById('report-month')?.value||'';
+  const yishuv  = document.getElementById('report-yishuv')?.value||'';
+  const hourRate= parseFloat(document.getElementById('hourly-rate')?.value)||0;
+  const kmRate  = parseFloat(document.getElementById('km-rate')?.value)||1.55;
+
+  const yishuvList = yishuv?[yishuv]:Object.keys(GLOBAL_RATE);
+  const allEntries = load().filter(e=>
+    (!month  || e.date.startsWith(month)) &&
+    (!yishuv || e.yishuv===yishuv)
+  );
+
+  if(!month){ document.getElementById('report-text').textContent='בחר חודש להצגת דוח.'; document.getElementById('summary-grid').innerHTML=''; document.getElementById('global-info-box').innerHTML=''; return; }
+
+  const days = daysInMonth(month);
+  const dates = allDatesInMonth(month);
+
+  // בנה מפה: יישוב → תאריך → רשומות
+  const byYishuvDate = {};
+  yishuvList.forEach(y=>{ byYishuvDate[y]={}; dates.forEach(d=>{ byYishuvDate[y][d]=[]; }); });
+  allEntries.forEach(e=>{ if(byYishuvDate[e.yishuv]) byYishuvDate[e.yishuv][e.date].push(e); });
+
+  let totalHours=0, totalTravel=0, totalVisits=0;
+  let lines=[];
+  lines.push('דוח עבודה — מערכת המים');
+  lines.push(`חודש: ${formatMonthLabel(month)}   |   ישוב: ${yishuv||'כל הישובים'}`);
+  lines.push('═'.repeat(44));
+
+  yishuvList.forEach(y=>{
+    const g=GLOBAL_RATE[y]||0;
+    const km=TRAVEL_KM[y]||0;
+    let yHours=0, yTravel=0, yVisits=0;
+    lines.push(`\n▸ ${y}  (גלובלי ${g} שע׳/יום, ${km} ק"מ לביקור)`);
+    lines.push('─'.repeat(36));
+
+    dates.forEach(d=>{
+      const recs = byYishuvDate[y][d];
+      const visits = recs.filter(r=>r.activity==='ביקור');
+      const reported = recs.reduce((s,r)=>s+(r.reportedHours||0),0);
+      const billed = Math.max(g, reported);
+      const travelCost = visits.length>0 ? km*kmRate : 0;
+
+      yHours  += billed;
+      yTravel += travelCost;
+      if(visits.length) yVisits++;
+
+      const note = reported>g?`(${formatHours(reported)} מדווח)`:reported>0&&reported<g?`(${formatHours(reported)} מדווח → גלובלי)`:recs.length===0?'(גלובלי)':'(גלובלי)';
+      const visitMark = visits.length>0?` 🚗 ₪${travelCost.toFixed(2)}`:'';
+      const descLines = recs.map(r=>`      ${r.activity==='ביקור'?'[ביקור] ':'[מרחוק] '}${r.type}: ${r.desc}`).join('\n');
+
+      lines.push(`  ${formatDate(d)}  ${formatHours(billed)} ${note}${visitMark}`);
+      if(descLines) lines.push(descLines);
+    });
+
+    lines.push(`  סה"כ ${y}: ${formatHours(yHours)} שעות | ${yVisits} ביקורים | נסיעות ₪${yTravel.toFixed(2)}`);
+    totalHours  += yHours;
+    totalTravel += yTravel;
+    totalVisits += yVisits;
+  });
+
+  const hoursAmount  = totalHours * hourRate;
+  const totalAmount  = hoursAmount + totalTravel;
+
+  lines.push('\n'+'═'.repeat(44));
+  lines.push(`סה"כ שעות לחיוב: ${formatHours(totalHours)}`);
+  lines.push(`סה"כ נסיעות: ₪${totalTravel.toFixed(2)} (${totalVisits} ביקורים)`);
+  if(hourRate){
+    lines.push(`שעות × ₪${hourRate} = ₪${hoursAmount.toLocaleString('he-IL')}`);
+    lines.push(`סה"כ לחשבונית: ₪${totalAmount.toLocaleString('he-IL', {minimumFractionDigits:2})}`);
+  }
+
+  // info box
+  const infoLines = yishuvList.map(y=>`${y}: ${GLOBAL_RATE[y]} שע׳/יום × ${days} ימים = ${formatHours(GLOBAL_RATE[y]*days)} מינימום`);
+  document.getElementById('global-info-box').innerHTML=`<div class="global-info">⏱ בסיס גלובלי חודשי:<br>${infoLines.join('<br>')}</div>`;
+
+  // summary
+  document.getElementById('summary-grid').innerHTML=`
+    <div class="stat-box"><div class="num">${formatHours(totalHours)}</div><div class="lbl">שעות לחיוב</div></div>
+    <div class="stat-box"><div class="num">${totalVisits}</div><div class="lbl">ביקורים פיזיים</div></div>
+    <div class="stat-box"><div class="num">₪${totalTravel.toFixed(2)}</div><div class="lbl">נסיעות</div></div>
+    <div class="stat-box"><div class="num">${hourRate?'₪'+(totalAmount).toLocaleString('he-IL',{maximumFractionDigits:0}):'—'}</div><div class="lbl">סה"כ לחשבונית</div></div>`;
+
+  document.getElementById('report-text').textContent = lines.join('\n');
+}
+
+function copyReport() {
+  const text=document.getElementById('report-text').textContent;
+  if(!text||text==='בחר חודש להצגת דוח.'){ showToast('אין מה להעתיק'); return; }
+  navigator.clipboard.writeText(text).then(()=>showToast('✓ הדוח הועתק ללוח'));
+}
+
+function populateMonthSelects() {
+  const entries=load();
+  const months=[...new Set(entries.map(e=>e.date.substring(0,7)))].sort().reverse();
+  const cur=new Date().toISOString().substring(0,7);
+  if(!months.includes(cur)) months.unshift(cur);
+  ['filter-month','report-month'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    const prev=el.value;
+    el.innerHTML=id==='filter-month'?'<option value="">הכל</option>':'<option value="">-- בחר חודש --</option>';
+    months.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=formatMonthLabel(m); el.appendChild(o); });
+    if(prev) el.value=prev;
+    else if(id==='report-month') el.value=cur;
+  });
+  renderReport();
+}
+
+function deleteEntry(id) {
+  if(!confirm('למחוק רשומה זו?')) return;
+  save(load().filter(e=>e.id!==id));
+  populateMonthSelects(); renderHistory();
+  showToast('🗑 נמחק');
+}
+function openEdit(id) {
+  const e=load().find(x=>x.id===id); if(!e) return;
+  document.getElementById('edit-id').value      = id;
+  document.getElementById('edit-yishuv').value  = e.yishuv||'';
+  document.getElementById('edit-activity').value= e.activity||'מרחוק';
+  document.getElementById('edit-date').value    = e.date;
+  document.getElementById('edit-hours').value   = e.reportedHours||0;
+  document.getElementById('edit-type').value    = e.type;
+  document.getElementById('edit-desc').value    = e.desc;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function saveEdit() {
+  const id=parseInt(document.getElementById('edit-id').value);
+  const entries=load(); const idx=entries.findIndex(e=>e.id===id); if(idx<0) return;
+  entries[idx].yishuv        = document.getElementById('edit-yishuv').value;
+  entries[idx].activity      = document.getElementById('edit-activity').value;
+  entries[idx].date          = document.getElementById('edit-date').value;
+  entries[idx].reportedHours = parseFloat(document.getElementById('edit-hours').value)||0;
+  entries[idx].type          = document.getElementById('edit-type').value;
+  entries[idx].desc          = document.getElementById('edit-desc').value;
+  entries.sort((a,b)=>b.date.localeCompare(a.date));
+  save(entries); closeModal(); populateMonthSelects(); renderHistory();
+  showToast('✓ עודכן');
+}
+
+function formatHours(h) {
+  const wh=Math.floor(h),m=Math.round((h-wh)*60);
+  return m?`${wh}:${String(m).padStart(2,'0')}`:`${wh}:00`;
+}
+function formatDate(d) {
+  const [y,mo,day]=d.split('-');
+  const dow=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][new Date(d).getDay()];
+  return `${day}/${mo}/${y} (${dow})`;
+}
+function formatMonthLabel(m) {
+  if(!m) return '';
+  const [y,mo]=m.split('-');
+  return `${ ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][parseInt(mo)] } ${y}`;
+}
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
